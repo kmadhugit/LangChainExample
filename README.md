@@ -3,7 +3,7 @@
 This project demonstrates two ways to build a tool-using agent:
 
 - OpenAI Chat Completions with function calling (`main.py`)
-- LangChain Tools Agent using the same Python functions (`main_langchain.py`)
+- LangChain Tools Agent (`Agent.py`) using tools defined in `tool_factory.py`
 
 ### Prerequisites
 
@@ -21,13 +21,13 @@ export OPENAI_API_KEY=your_key_here
 ### Run the LangChain agent
 
 ```bash
-python main_langchain.py
+python Agent.py
 ```
 
 What you’ll see:
 
 - Step-by-step agent logs (colored) showing tool calls and observations
-- Callback logs for every LLM call, including full prompts and token usage when available
+- Callback logs for every LLM call, including full prompts, tool-calls, and the final message object
 - A final natural-language answer
 
 Example (varies):
@@ -45,24 +45,23 @@ The weather in Paris is sunny and 30°C, and the UV index is 8. You should wear 
 
 Files involved:
 
-- `main_langchain.py`: builds tools, prompt, and an OpenAI Tools Agent; runs `AgentExecutor`
-- `tools/weather.py`: `get_weather(city: str) -> str`
-- `tools/uv_index.py`: `get_uv_index(city: str) -> int`
-- `tools/sunscreen.py`: `should_wear_sunscreen(weather: str, uv_index: int) -> str`
+- `Agent.py`: builds the LangChain agent, wires callbacks, and runs it
+- `tool_factory.py`: defines tools and wraps them with `StructuredTool.from_function`
+- `main.py`: minimal OpenAI Chat Completions loop (function-calling) alternative
 
 ### Logging OpenAI calls
 
-`main_langchain.py` includes an `LLMCallLogger` callback that prints on every model call:
+`Agent.py` includes a `MyLogger` callback that prints on every model call:
 
-- [LLM start]: model and full prompt text
-- [LLM end]: token usage (when available)
+- on_llm_start: prints each prompt
+- on_llm_end: prints the returned message object via `response.generations[0][0].message`
 
-You can toggle verbosity of the agent run itself by changing `verbose=True` in the `AgentExecutor`.
+You can toggle verbosity by setting `verbose=True` when initializing the agent.
 
 Disable colored output (optional):
 
 ```bash
-NO_COLOR=1 python main_langchain.py
+NO_COLOR=1 python Agent.py
 ```
 
 ### Optional: Tracing with LangSmith
@@ -72,7 +71,7 @@ Enable rich traces and a web UI with LangSmith (optional):
 ```bash
 export LANGCHAIN_TRACING_V2=true
 export LANGCHAIN_API_KEY=your_langsmith_key
-python main_langchain.py
+python Agent.py
 ```
 
 ### Alternative: OpenAI function-calling loop
@@ -83,6 +82,6 @@ You can also run the original, minimal loop using the OpenAI Chat Completions AP
 python main.py
 ```
 
-That script manually executes tool calls using the schema in `tools/tools_factory.py` and prints request/response tables for debugging.
+That script manually executes tool calls using the schema and prints request/response tables for debugging.
 
 
